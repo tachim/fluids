@@ -3,7 +3,7 @@
 from numpy import allclose, arange, eye, linalg, random, ones, zeros
 from scipy import linalg, sparse
 
-import cairo, gtk, math
+import cairo, gtk, math, time
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -480,8 +480,10 @@ if __name__ == '__main__':
 
     draw_grid(ctx,grid)
     draw_density(ctx,density)
-
-    surface.write_to_png("output/tmp.png")
+    
+    currtime = time.strftime("%Y%m%d-%H:%M:%S")
+    
+    surface.write_to_png("output/" + currtime + ".png")
     
 
 
