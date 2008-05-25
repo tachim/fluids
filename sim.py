@@ -399,9 +399,9 @@ def button_press_event(widget,event,grid):
     return True
 
 
-def draw_density(surface,density):
-    if len(density) == 3:
-        maxx, maxy = density[1], density[2]
+def draw_density(surface,dens):
+    if len(dens) == 3:
+        maxx, maxy = dens[1], dens[2]
         ctx = surface
         counter = 0
         maxcount = maxx*maxy*scale_const*scale_const / 100
@@ -414,8 +414,8 @@ def draw_density(surface,density):
                     counter = counter + 1
                 tx = (ipix-scale_const/2.0)/scale_const
                 ty = (jpix-scale_const/2.0)/scale_const
-                dens = densterp(tx,ty,density)
-                ctx.set_source_rgba(0.543,0.271,0.186,dens/max_dens)#brown
+                densi = densterp(tx,ty,dens)
+                ctx.set_source_rgba(0.543,0.271,0.186,densi/max_dens)#brown
                 ctx.rectangle(ipix,jpix,1,1)
                 ctx.fill()
 
@@ -426,15 +426,14 @@ def add_source():
     global grid
     grid[0] += source[0]
 
-def update_grids():
-    global grid, density
+
     
 
 if __name__ == '__main__':
     dens_squares_x = 90
     dens_squares_y = 90
 
-    draw_density = 1
+    
     grid = build_vel(30,30)
     
     source = build_vel(30,30)
@@ -478,22 +477,11 @@ if __name__ == '__main__':
 
     surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
     ctx = cairo.Context (surface)
-    
+
     draw_grid(ctx,grid)
+    draw_density(ctx,density)
 
-    surface.write_to_png("tmp.png")
-
-
-    
-    # for z in range(0,10):
-#         print "step:",z
-#         # grid[0] -= grav*0.05
-#         #        print "Added gravity."
-        
-#         # if z < 4:
-#         # grid[0] = grid[0] + source[0]
-#         #             print "Added source force"
-#         update_grids()
+    surface.write_to_png("output/tmp.png")
     
 
 
