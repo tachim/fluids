@@ -17,8 +17,6 @@ scale_const = 25
 
 max_dens = 10.0
 
-grid = 0
-
 # Some api in the chain is translating the keystrokes to this octal string
 # so instead of saying: ESCAPE = 27, we use the following.
 ESCAPE = '\033'
@@ -65,7 +63,7 @@ def build_densities(x,y,z=0):
     arr = zeros(x*y)
     for i in range((x-1)/3+1,2*(x-1)/3+1):
         for j in range(2*(x-1)/3+1,y):
-            arr[coord2indexscal(i,j,(x,y))] = max_dens + 5
+            arr[coord2indexscal(i,j,(x,y))] = max_dens
     return [[arr,5],x,y]
 
 def sum_density(densities):
@@ -422,214 +420,7 @@ def draw_density(surface,density):
                 ctx.fill()
 
 
-##
-##
-##
-###
-#### BOILERPLATE
-####
-##########################################################################################################################################################
-##########################################################################################################################################################
-##########################################################################################################################################################
-##
-##
-##
-
-def InitGL(Width, Height):
-    glClearColor(0.0, 0.0, 0.0, 0.0)
-    glClearDepth(1.0)
-    glDepthFunc(GL_LESS)
-    glEnable(GL_DEPTH_TEST)
-    glShadeModel(GL_SMOOTH)
-    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
-    glEnable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-
-    gluPerspective(45.0, float(Width)/float(Height), 0.1, 100.0)
-
-    glMatrixMode(GL_MODELVIEW)
-
-def ReSizeGLScene(width, height):
-    if height == 0:
-        height = 1
-
-    glViewport(0,0,width,height)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
-    
-    glMatrixMode(GL_MODELVIEW)
-
-# The main drawing function. 
-def DrawGLScene():
-    # Clear The Screen And The Depth Buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glLoadIdentity()					# Reset The View 
-
-    # Move Left 1.5 units and into the screen 6.0 units.
-    glTranslatef(0.0, 0.0, -8.0)
-
-    glColor3f(1.0,0.0,0.0)
-    #glRectf(-3.0,2.0,3.0,-2.0)
-    if grid[-1] == 2:
-        glBegin(GL_LINE_STRIP)
-        glVertex3f(-3.0,3.0,0.0)
-        glVertex3f(3.0,3.0,0.0)
-        glVertex3f(3.0,-3.0,0.0)
-        glVertex3f(-3.0,-3.0,0.0)
-        glVertex3f(-3.0,3.0,0.0)
-        glEnd()
-        
-        arr, maxx, maxy = grid[0],grid[1],grid[2]
-        #print maxx, maxy
-        xdisp = 6.0 / (maxx+1)
-        ydisp = 6.0 / (maxy+1)
-        
-        #print xdisp, ydisp
-        
-        glTranslatef(-3.0+xdisp,3.0-ydisp,0.0)
-        for j in xrange(0,maxy):
-            for i in xrange(0,maxx):
-                xv = arr[coord2indexvel(i,j,0,[maxx,maxy])] / scale_const / 3
-                yv = -1.0 * arr[coord2indexvel(i,j,1,[maxx,maxy])] / scale_const / 3
-                #print xv,yv
-                glBegin(GL_LINES)
-                glVertex3f(0.0,0.0,0.0)
-                glVertex3f(xv,yv,0.0)
-                glEnd()
-                
-                #now we move the initial point (make sure to take care of y-edge-case (need a new line)
-                if i == (maxx-1):
-                    #print i
-                    glTranslatef((-30.0)*xdisp+xdisp, -1 * ydisp,0.0)
-                else:
-                    glTranslatef(xdisp, 0.0,0.0)
-        glTranslatef(-xdisp-0.05,ydisp*31+0.1,0.0)
-        
-        if draw_density == 1:
-            dx = 6.0 / dens_squares_x
-            dy = 6.0 / dens_squares_y
-            counter = 0
-            for j in xrange(0,dens_squares_y):
-                for i in xrange(0,dens_squares_x):
-                    if counter == 500:
-                        print (i+j*dens_squares_y*1.0)/(dens_squares_x*dens_squares_y)*100,"%"
-                        counter = 0
-                    else:
-                        counter += 1
-                    tx = 1.0 * i / dens_squares_x * maxx
-                    ty = 1.0 * j / dens_squares_y * maxy
-                    curr_dens = densterp(tx,ty,density)
-                    
-
-                    glColor4f(0.543,0.271,0.186,(1.0 * curr_dens)/max_dens)
-                    #glBlendFunc(GL_SRC_ALPHA, GL_ONE)
-                    glBegin(GL_QUADS)
-                    glVertex3f(-dx,dy,0.0)
-                    glVertex3f(dx,dy,0.0)
-                    glVertex3f(dx,-dy,0.0)
-                    glVertex3f(-dx,-dy,0.0)
-                    glEnd()
-#                     if curr_dens != 0.0:
-#                         glColor3f(0.0,1.0,0.0)
-#                         glBegin(GL_LINES)
-#                         glVertex3f(0.0,0.0,0.0)
-#                         glVertex3f(1.0,1.0,0.0)
-#                         glEnd()
-                    
-                    if i == (dens_squares_x - 1):
-                        glTranslatef(-6.0+dx,-dy,0.0)
-                    else:
-                        glTranslatef(dx,0.0,0.0)
-                    
-    glutSwapBuffers()
-
-# The function called whenever a key is pressed. Note the use of Python tuples to pass in: (key, x, y)  
-def keyPressed(*args):
-	# If escape is pressed, kill everything.
-    if args[0] == ESCAPE:
-        sys.exit()
-    if args[0] == SPACE:
-        update_grids()
-    if args[0] == '\141': #a
-        add_source()
-    if args[0] == '\163':
-        density[0][0] += source_dens[0][0]
-def main():
-    global window
-    # For now we just pass glutInit one empty argument. I wasn't sure what should or could be passed in (tuple, list, ...)
-    # Once I find out the right stuff based on reading the PyOpenGL source, I'll address this.
-    glutInit(sys.argv)
-
-    # Select type of Display mode:   
-    #  Double buffer 
-    #  RGBA color
-    # Alpha components supported 
-    # Depth buffer
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-    
-    # get a 640 x 480 window 
-    glutInitWindowSize(800, 800)
-    
-    # the window starts at the upper left corner of the screen 
-    glutInitWindowPosition(0, 0)
-    
-    # Okay, like the C version we retain the window id to use when closing, but for those of you new
-    # to Python (like myself), remember this assignment would make the variable local and not global
-    # if it weren't for the global declaration at the start of main.
-    window = glutCreateWindow("Smoke")
-
-    # Register the drawing function with glut, BUT in Python land, at least using PyOpenGL, we need to
-    # set the function pointer and invoke a function to actually register the callback, otherwise it
-    # would be very much like the C version of the code.	
-    glutDisplayFunc(DrawGLScene)
-    
-    # Uncomment this line to get full screen.
-    #glutFullScreen()
-    # When we ar doing nothing, redraw the scene.
-    #glutIdleFunc(DrawGLScene)
-    
-    # Register the function called when our window is resized.
-    glutReshapeFunc(ReSizeGLScene)
-    
-    # Register the function called when the keyboard is pressed.  
-    glutKeyboardFunc(keyPressed)
-    # Initialize our window 
-    InitGL(800,800)
-    # Start Evet Processing Engine	
-    glutMainLoop()
-
-
-
-
-
- #in pixels
-dens_squares_x = 90
-dens_squares_y = 90
-
-draw_density = 1
-grid = build_vel(30,30)
-
-source = build_vel(30,30)
-source_dens = build_densities(30,30)
-max_x = grid[1]
-max_y = grid[2] 
-dens_diff = make_dens_diff_matrix(grid,0.5,0.1)
-dens_diff = dens_diff.tocsr()
-density = build_densities(max_x,max_y)
-
-dens_before = sum_density(density)
-grav = build_gravity(max_x,max_y)
-diff_mat = make_diffuse_matrix(grid,0.5,0.1)
-diff_mat = diff_mat.tocsr()
-div_mat = make_div_matrix(grid)
-div_mat = div_mat.tocsr()
-scalp = make_scalar_lapl(grid)
-scalp = scalp.tocsr()
-grad_mat = make_grad_mat(grid)
-grad_mat = grad_mat.tocsr()
+#boilerplate
 
 def add_source():
     global grid
@@ -637,27 +428,62 @@ def add_source():
 
 def update_grids():
     global grid, density
-    grid = advect_grid(grid,0.1)
-    print "Advected grid." 
-    grid[0] = linalg.cg(diff_mat, grid[0])[0]
-    print "Finished diffusion."
-    pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
-    print "Finished calculating pressure."
-    velsub = grad_mat.matvec(pressures[0][0])
-    print "Finished calculating pressure gradient"
-    grid[0] -= velsub
-    print "Finished subtracting pressure gradient."
-    pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
-    print "Finished calculating pressures for new velocity field."
-    density[0][0]=linalg.cg(dens_diff,density[0][0])[0]
-    print "Finished diffusing density."
-    density = advect_densities(density,grid,0.1)
-    print "Finished advecting density."
+    
 
 if __name__ == '__main__':
-    # Print message to console, and kick off the main to get it rolling.
-    print "Hit ESC key to quit."
-    #global grid
+    dens_squares_x = 90
+    dens_squares_y = 90
+
+    draw_density = 1
+    grid = build_vel(30,30)
+    
+    source = build_vel(30,30)
+    source_dens = build_densities(30,30)
+    max_x = grid[1]
+    max_y = grid[2] 
+    dens_diff = make_dens_diff_matrix(grid,0.5,0.1)
+    dens_diff = dens_diff.tocsr()
+    density = build_densities(max_x,max_y)
+    
+    dens_before = sum_density(density)
+    grav = build_gravity(max_x,max_y)
+    diff_mat = make_diffuse_matrix(grid,0.5,0.1)
+    diff_mat = diff_mat.tocsr()
+    div_mat = make_div_matrix(grid)
+    div_mat = div_mat.tocsr()
+    scalp = make_scalar_lapl(grid)
+    scalp = scalp.tocsr()
+    grad_mat = make_grad_mat(grid)
+    grad_mat = grad_mat.tocsr()
+
+    for z in xrange(0,1):
+        grid = advect_grid(grid,0.1)
+        print "Advected grid." 
+        grid[0] = linalg.cg(diff_mat, grid[0])[0]
+        print "Finished diffusion."
+        pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
+        print "Finished calculating pressure."
+        velsub = grad_mat.matvec(pressures[0][0])
+        print "Finished calculating pressure gradient"
+        grid[0] -= velsub
+        print "Finished subtracting pressure gradient."
+        pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
+        print "Finished calculating pressures for new velocity field."
+        density[0][0]=linalg.cg(dens_diff,density[0][0])[0]
+        print "Finished diffusing density."
+        density = advect_densities(density,grid,0.1)
+        print "Finished advecting density."
+    
+    WIDTH, HEIGHT = max_x*(scale_const+1), max_y*(scale_const+1)
+
+    surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
+    ctx = cairo.Context (surface)
+    
+    draw_grid(ctx,grid)
+
+    surface.write_to_png("tmp.png")
+
+
     
     # for z in range(0,10):
 #         print "step:",z
@@ -668,9 +494,7 @@ if __name__ == '__main__':
 #         # grid[0] = grid[0] + source[0]
 #         #             print "Added source force"
 #         update_grids()
-        
-    print "Drawing density."
-    main()
+    
 
 
 
