@@ -78,7 +78,15 @@ class Screen(gtk.DrawingArea):
         self.max_timesteps = len(information)
         self.velgrid = information[0][4]
         self.max_dens = 10.0
+        self.density_xres = 50
+        self.density_yres = 50
         
+        
+    def density_xres_handle(self,widget,box):
+        self.density_xres = int(box.get_text())
+
+    def density_yres_handle(self,widget,box):
+        self.density_yres = int(box.get_text())
 
     def add_progress(self, progress): #we're not actually going to show() it here, just update it
         self.progress_bar = progress
@@ -93,11 +101,17 @@ class Screen(gtk.DrawingArea):
             self.draw_grid()
         else:
             box.set_text("Timestep out of range.")
+    def add_velstage_txtbox(self,box):
+        self.velstage_box = box
+    
+    def add_timestep_txtbox(self,box):
+        self.timestep_box = box
 
     def timestep_inc(self,widget,event):
         if self.timestep < (self.max_timesteps-1):
             #print "does something"
             self.timestep = self.timestep + 1
+            self.timestep_box.set_text(str(self.timestep))
             self.draw_grid()
             
     def divergence_handle(self,widget,event):
@@ -106,6 +120,7 @@ class Screen(gtk.DrawingArea):
     def timestep_dec(self,widget,event):
         if self.timestep > 0:
             self.timestep = self.timestep - 1
+            self.timestep_box.set_text(str(self.timestep))
             self.draw_grid()
 
     def dens_handle(self,widget,event):
@@ -141,6 +156,7 @@ class Screen(gtk.DrawingArea):
             self.grid_to_draw = 9
         elif current == 9:
             self.grid_to_draw = 12
+        self.velstage_box.set_text(str(self.grid_to_draw))
         self.draw_grid()
 
     def vel_stage_dec(self,widget,event):
@@ -151,6 +167,7 @@ class Screen(gtk.DrawingArea):
             self.grid_to_draw = 8
         elif current == 8:
             self.grid_to_draw = 4
+        self.velstage_box.set_text(str(self.grid_to_draw))
         self.draw_grid()
     
     def foo_button(self,widget,event):
@@ -245,20 +262,29 @@ class Screen(gtk.DrawingArea):
             maxx, maxy = self.dens[1], self.dens[2]
             self.ctx = self.window.cairo_create()
             counter = 0
-            maxcount = maxx*maxy*self.scale_const*self.scale_const / 100
-            for ipix in xrange(self.scale_const/2,self.scale_const/2 + maxx * self.scale_const):
-                for jpix in xrange(self.scale_const/2,self.scale_const/2 + maxy * self.scale_const):
-                    if counter >= maxcount:
+            idisp = self.scale_const/2.0
+            maxcount = self.density_xres * self.density_yres / 100
+            xrang = [self.scale_const/2, self.scale_const/2 + maxx*self.scale_const]
+            yrang = [self.scale_const/2,self.scale_const/2 + maxy * self.scale_const]
+            xstep = (xrang[1]-xrang[0])/self.density_xres
+            ystep = (yrang[1]-yrang[0])/self.density_yres
+#            print xstep, ystep
+            for i in xrange(0,self.density_xres):
+                for j in xrange(0,self.density_yres):
+                    if counter>= maxcount:
                         counter = 0
-                        self.progress_bar.set_fraction((jpix*1.0+ipix*maxy*self.scale_const)/(maxx*maxy*self.scale_const*self.scale_const))
-                    else:                    
+#                        print (j+i*maxy*1.0)/(maxcount * 100)
+                        #self.progress_bar.set_fraction()
+                    else:
                         counter = counter + 1
-                    tx = (ipix-self.scale_const/2.0)/self.scale_const
-                    ty = (jpix-self.scale_const/2.0)/self.scale_const
+                    tx = maxx *1.0 *i/ self.density_xres + maxx*1.0/self.density_xres/2.0
+                    ty = maxy * 1.0*j / self.density_yres + maxy*1.0/self.density_yres/2.0
                     densi = densterp(tx,ty,self.dens)
-                    self.ctx.set_source_rgba(0.543,0.271,0.186,densi/self.max_dens)#brown
-                    self.ctx.rectangle(ipix,jpix,1,1)
-                    self.ctx.fill()
+#                    print densi
+                    if densi > 0:
+                        self.ctx.set_source_rgba(0.543,0.271,0.186,densi/self.max_dens)#brown
+                        self.ctx.rectangle(idisp+i*xstep,idisp+j*ystep,xstep,ystep)
+                        self.ctx.fill()
 
     def draw_divergence(self):
         print "in draw_divergence"
@@ -362,11 +388,12 @@ def main():
     timestepButtonBox.pack_start(timestepMinusButton)
     timestepButtonBox.pack_start(timestepPlusButton)
 
+    widget.add_timestep_txtbox(timestep)
     stagelabel = gtk.Label("\nVelocity Stage")
     stage = gtk.Entry(40)
     stage.set_text("4")
     stage_entry = stage.connect('activate',widget.vel_stage_to_draw, stage)
-
+    widget.add_velstage_txtbox(stage)
     stage_inc = gtk.Button("+")
     stage_inc_handle = stage_inc.connect('button_press_event', widget.vel_stage_inc)
     stage_dec = gtk.Button("-")
@@ -379,6 +406,14 @@ def main():
     density_butt = gtk.Button("Draw density")
     density_butt_handle = density_butt.connect('button_press_event', widget.dens_handle)
     
+    density_res_box = gtk.HBox()
+    density_xres = gtk.Entry(4)
+    density_yres = gtk.Entry(4)
+    density_res_box.pack_start(density_xres,False)
+    density_res_box.pack_start(density_yres,False)
+    density_xres_handler = density_xres.connect('activate',widget.density_xres_handle,density_xres)
+    density_yres_handler = density_yres.connect('activate',widget.density_yres_handle,density_yres)
+
     density_progress = gtk.ProgressBar()
     widget.add_progress(density_progress)
 
@@ -391,9 +426,10 @@ def main():
     pressbox.pack_start(pressure_butt)
     pressbox.pack_start(pressure_butt2)
 
-
+    
     divergence = gtk.Button("Divergence")
     divergence_handle = divergence.connect('button_press_event', widget.divergence_handle)
+
 
     
     buttonbox.pack_start(button,False)
@@ -405,6 +441,7 @@ def main():
     buttonbox.pack_start(stage_box, False)
     buttonbox.pack_start(newline, False)
     buttonbox.pack_start(density_butt,False, padding=3)
+    buttonbox.pack_start(density_res_box, False)
     buttonbox.pack_start(density_progress,False)
     buttonbox.pack_start(presslabel,False)
     buttonbox.pack_start(pressbox, False)
@@ -415,6 +452,9 @@ def main():
     buttonbox.show()
     stage_inc.show()
     stage_box.show()
+    density_res_box.show()
+    density_xres.show()
+    density_yres.show()
     newline.show()
     stage_dec.show()
     divergence.show()
