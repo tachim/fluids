@@ -3,7 +3,7 @@
 from numpy import allclose, arange, eye, linalg, random, ones, zeros
 from scipy import linalg, sparse
 
-import cairo, gtk, math, time
+import cairo, gtk, math, time, pickle
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -16,14 +16,6 @@ def square(x):
 scale_const = 25
 
 max_dens = 10.0
-
-# Some api in the chain is translating the keystrokes to this octal string
-# so instead of saying: ESCAPE = 27, we use the following.
-ESCAPE = '\033'
-SPACE = '\040'
-
-# Number of the glut window.
-window = 0
 
 def coord2indexvel(x, y, comp, dims, z=-1):
     if len(dims) == 2:
@@ -430,60 +422,110 @@ def add_source():
     
 
 if __name__ == '__main__':
-    dens_squares_x = 90
-    dens_squares_y = 90
+    information = [] 
+#     format: timestep, dt, nu, kappa, init-vel, init-dens, added-vel, added-dens, vel-after-advec,
+#     vel-after-diff, press-before-proj, pressure-gradient, vel-after-proj, press-after-proj, dens-after-diff,
+#     dens-after-adv
 
-    
+    nu = 0.5
+    kappa = 0.5
+    dt = 0.1
     grid = build_vel(30,30)
-    
+
     source = build_vel(30,30)
     source_dens = build_densities(30,30)
     max_x = grid[1]
     max_y = grid[2] 
-    dens_diff = make_dens_diff_matrix(grid,0.5,0.1)
+    dens_diff = make_dens_diff_matrix(grid,kappa,dt)
     dens_diff = dens_diff.tocsr()
+    print "Finished generating density diffusion matrix."
     density = build_densities(max_x,max_y)
     
     dens_before = sum_density(density)
     grav = build_gravity(max_x,max_y)
-    diff_mat = make_diffuse_matrix(grid,0.5,0.1)
+    diff_mat = make_diffuse_matrix(grid,nu,dt)
     diff_mat = diff_mat.tocsr()
+    print "Finished generating velocity diffusion matrix."
     div_mat = make_div_matrix(grid)
     div_mat = div_mat.tocsr()
+    print "Finished generating velocity divergence matrix."
     scalp = make_scalar_lapl(grid)
     scalp = scalp.tocsr()
+    print "Finished generating scalar laplacian matrix."
     grad_mat = make_grad_mat(grid)
     grad_mat = grad_mat.tocsr()
+    print "Finished generating gradient matrix."
+    
+    for z in xrange(0,10):
+        print '\nStep:',z
 
-    for z in xrange(0,1):
-        grid = advect_grid(grid,0.1)
-        print "Advected grid." 
+        information.append([z]) #0
+        information[z].append(dt)#1
+        information[z].append(nu)#2
+        information[z].append(kappa)#3
+        information[z].append(grid[:])#4
+        information[z].append(density[:])#5
+        information[z].append('none added')#6
+        information[z].append('none added')#7
+        
+        grid = advect_grid(grid,dt)
+        tmp = [grid[0].copy()]
+        tmp.extend(grid[1:])
+        information[z].append(tmp)#8
+        print "Finished advecting velocity grid." 
         grid[0] = linalg.cg(diff_mat, grid[0])[0]
+        tmp = [grid[0].copy()]
+        tmp.extend(grid[1:])
+        information[z].append(tmp)#9
         print "Finished diffusion."
         pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
+        tmp = [pressures[0][0].copy(),pressures[0][1]]
+        tmp.extend(pressures[1:])
+        information[z].append(tmp)#10
         print "Finished calculating pressure."
         velsub = grad_mat.matvec(pressures[0][0])
+        information[z].append(velsub.copy())#11
         print "Finished calculating pressure gradient"
         grid[0] -= velsub
+        tmp = [grid[0].copy()]
+        tmp.extend(grid[1:])
+        information[z].append(tmp)#12
         print "Finished subtracting pressure gradient."
         pressures = [linalg.cg(scalp,div_mat.matvec(grid[0])), max_x, max_y]
+        tmp = [pressures[0][0].copy(),pressures[0][1]]
+        tmp.extend(pressures[1:])
+        information[z].append(tmp)#13
         print "Finished calculating pressures for new velocity field."
-        density[0][0]=linalg.cg(dens_diff,density[0][0])[0]
-        print "Finished diffusing density."
-        density = advect_densities(density,grid,0.1)
+        density = advect_densities(density,grid,dt)
+        tmp = [density[0][0].copy(),density[0][1]]
+        tmp.extend(density[1:])
+        information[z].append(tmp)#14
         print "Finished advecting density."
-    
-    WIDTH, HEIGHT = max_x*(scale_const+1), max_y*(scale_const+1)
+        density[0][0]=linalg.cg(dens_diff,density[0][0])[0]
+        tmp = [density[0][0].copy(),density[0][1]]
+        tmp.extend(density[1:])
+        information[z].append(tmp)#15
+        print "Finished diffusing density."
 
-    surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
-    ctx = cairo.Context (surface)
 
-    draw_grid(ctx,grid)
-    draw_density(ctx,density)
-    
+        
     currtime = time.strftime("%Y%m%d-%H:%M:%S")
+    logfile = open('output/'+currtime, 'w')
+    pickle.dump(information, logfile)
+    logfile.close()
     
-    surface.write_to_png("output/" + currtime + ".png")
+    
+#     WIDTH, HEIGHT = max_x*(scale_const+1), max_y*(scale_const+1)
+
+#     surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
+#     ctx = cairo.Context (surface)
+
+#     draw_grid(ctx,grid)
+#     draw_density(ctx,density)
+    
+        
+    
+#     surface.write_to_png("output/" + currtime + ".png")
     
 
 
