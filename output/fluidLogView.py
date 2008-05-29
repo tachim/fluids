@@ -26,6 +26,7 @@ from gtk import *
 
 def square(x):
     return x*x
+
 def coord2indexvel(x, y, comp, dims, z=-1):
     if len(dims) == 2:
         return comp + 2*x + 2*y*dims[0]
@@ -262,12 +263,12 @@ class Screen(gtk.DrawingArea):
             maxx, maxy = self.dens[1], self.dens[2]
             self.ctx = self.window.cairo_create()
             counter = 0
-            idisp = self.scale_const/2.0
+            idisp = self.scale_const/2
             maxcount = self.density_xres * self.density_yres / 100
-            xrang = [self.scale_const/2, self.scale_const/2 + maxx*self.scale_const]
-            yrang = [self.scale_const/2,self.scale_const/2 + maxy * self.scale_const]
-            xstep = (xrang[1]-xrang[0])/self.density_xres
-            ystep = (yrang[1]-yrang[0])/self.density_yres
+            xrang = [self.scale_const/2, self.scale_const/2 + maxx * self.scale_const]
+            yrang = [self.scale_const/2, self.scale_const/2 + maxy * self.scale_const]
+            xstep = (xrang[1]-xrang[0]) / self.density_xres
+            ystep = (yrang[1]-yrang[0]) / self.density_yres
 #            print xstep, ystep
             for i in xrange(0,self.density_xres):
                 for j in xrange(0,self.density_yres):
@@ -277,8 +278,8 @@ class Screen(gtk.DrawingArea):
                         #self.progress_bar.set_fraction()
                     else:
                         counter = counter + 1
-                    tx = maxx *1.0 *i/ self.density_xres + maxx*1.0/self.density_xres/2.0
-                    ty = maxy * 1.0*j / self.density_yres + maxy*1.0/self.density_yres/2.0
+                    tx = maxx * i / (self.density_xres * 1.0) + (maxx / self.density_xres) / 2.0
+                    ty = maxy * j / (self.density_yres * 1.0)+ (maxy / self.density_yres) / 2.0
                     densi = densterp(tx,ty,self.dens)
 #                    print densi
                     if densi > 0:
