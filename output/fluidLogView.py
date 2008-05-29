@@ -321,12 +321,13 @@ class Screen(gtk.DrawingArea):
             maxx, maxy = self.dens[1], self.dens[2]
             self.ctx = self.window.cairo_create()
             counter = 0
-            idisp = self.scale_const/2
+            idisp = self.scale_const/2.0
             maxcount = self.density_xres * self.density_yres / 100
             xrang = [self.scale_const/2, self.scale_const/2 + maxx * self.scale_const]
             yrang = [self.scale_const/2, self.scale_const/2 + maxy * self.scale_const]
             xstep = (xrang[1]-xrang[0]) / self.density_xres
             ystep = (yrang[1]-yrang[0]) / self.density_yres
+#            print xstep,ystep
 #            print xstep, ystep
             for i in xrange(0,self.density_xres):
                 for j in xrange(0,self.density_yres):
@@ -338,6 +339,10 @@ class Screen(gtk.DrawingArea):
                         counter = counter + 1
                     tx = maxx * i / (self.density_xres * 1.0) + (maxx / self.density_xres) / 2.0
                     ty = maxy * j / (self.density_yres * 1.0)+ (maxy / self.density_yres) / 2.0
+                    t1x = maxx * i / ((self.density_xres + 50) * 1.0) + (maxx / (self.density_xres + 50)) / 2.0
+                    t1y = maxy * i / ((self.density_yres + 50) * 1.0) + (maxy / (self.density_yres + 50)) / 2.0
+                    print tx-t1x,ty-t1y
+#                    print tx,ty
                     densi = densterp(tx,ty,self.dens)
 #                    print densi
                     if densi > 0:

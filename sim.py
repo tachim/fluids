@@ -513,21 +513,3 @@ if __name__ == '__main__':
     logfile = open('output/'+currtime, 'w')
     pickle.dump(information, logfile)
     logfile.close()
-    
-    
-#     WIDTH, HEIGHT = max_x*(scale_const+1), max_y*(scale_const+1)
-
-#     surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
-#     ctx = cairo.Context (surface)
-
-#     draw_grid(ctx,grid)
-#     draw_density(ctx,density)
-    
-        
-    
-#     surface.write_to_png("output/" + currtime + ".png")
-    
-
-
-
-    
