@@ -5,9 +5,9 @@ from scipy import linalg, sparse
 
 import cairo, gtk, math, time, pickle
 
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
+# from OpenGL.GL import *
+# from OpenGL.GLUT import *
+# from OpenGL.GLU import *
 import sys
 
 def square(x):

@@ -174,6 +174,7 @@ class Screen(gtk.DrawingArea):
     def foo_button(self,widget,event):
         self.draw_grid()
         
+
     def draw_grid(self):
         self.ctx = self.window.cairo_create()
         self.ctx.rectangle(0,0,1000,1000)
@@ -202,6 +203,66 @@ class Screen(gtk.DrawingArea):
                 self.ctx.move_to(idisp,idisp+j*self.scale_const)
                 self.ctx.rel_line_to(maxx*self.scale_const,0)
             self.ctx.stroke()
+    
+#     def draw_grid(self):
+#         self.ctx = self.window.cairo_create()
+#         self.ctx.rectangle(0,0,1000,1000)
+#         self.ctx.set_source_rgb(1,1,1)
+#         self.ctx.fill()
+#         grid = self.information[self.timestep][self.grid_to_draw]
+#         idisp = self.scale_const/2 #we don't want to start drawing at the edge of the screen because that would suck
+#         #def coord2indexvel(x, y, comp, dims, z=-1):
+#         arr = grid[0]
+#         maxx = grid[1]
+#         maxy = grid[2]
+#         comps = grid[3]
+
+#         #let's draw a rectangle around the grid
+#         self.ctx.set_source_rgba(0,0,0,0.5)
+#         self.ctx.set_line_width(1)
+#         self.ctx.new_path()
+#         self.ctx.rectangle(idisp,idisp, maxx*self.scale_const, maxy*self.scale_const)
+
+#         if comps == 2:
+
+#             for i in range(0,maxx):
+#                 self.ctx.move_to(idisp+i*self.scale_const,idisp)
+#                 self.ctx.rel_line_to(0,maxy*self.scale_const)
+#             for j in range(0,maxy):
+#                 self.ctx.move_to(idisp,idisp+j*self.scale_const)
+#                 self.ctx.rel_line_to(maxx*self.scale_const,0)
+#             self.ctx.stroke()
+#             self.ctx.set_line_width(2)
+#             self.ctx.set_source_rgb(0,0,0)
+#             for i in range(0,maxx):
+#                 for j in range(0,maxy):
+#                     ix = self.scale_const*i+self.scale_const
+#                     iy = self.scale_const*j+self.scale_const
+#                     fx = ix+self.scale_const/10.0*arr[coord2indexvel(i,j,0,[maxx,maxy])]
+#                     fy = iy+self.scale_const/10.0*arr[coord2indexvel(i,j,1,[maxx,maxy])]
+#                     if (fx-ix) != 0.0 or (fy-iy) != 0.0:
+#                         #print "attempting arrow"
+#                         self.draw_arrow(ix,iy,fx,fy)
+# #         self.ctx.move_to(0,0)
+# #         self.ctx.stroke()
+                        
+    def draw_velocity(self,widget,event):
+        self.ctx = self.window.cairo_create()
+        
+        grid = self.information[self.timestep][self.grid_to_draw]
+        idisp = self.scale_const/2 #we don't want to start drawing at the edge of the screen because that would suck
+        #def coord2indexvel(x, y, comp, dims, z=-1):
+        arr = grid[0]
+        maxx = grid[1]
+        maxy = grid[2]
+        comps = grid[3]
+
+        #let's draw a rectangle around the grid
+        
+
+        if comps == 2:
+
+        
             self.ctx.set_line_width(2)
             self.ctx.set_source_rgb(0,0,0)
             for i in range(0,maxx):
@@ -215,9 +276,6 @@ class Screen(gtk.DrawingArea):
                         self.draw_arrow(ix,iy,fx,fy)
 #         self.ctx.move_to(0,0)
 #         self.ctx.stroke()
-                        
-
-
     def draw_arrow(self,ix,iy,fx,fy):
         #self.ctx = self.window.cairo_create()
         self.ctx.set_source_rgb(0,0,0)
@@ -256,7 +314,7 @@ class Screen(gtk.DrawingArea):
                     self.ctx.set_source_rgba(0,0,1,0.6)
                     self.ctx.arc(i*self.scale_const+idisp*2, idisp*2+j*self.scale_const, curr_press * self.scale_const / 10.0, 0, math.pi * 2)
                     self.ctx.fill()
-
+ 
     def draw_density(self):
         self.dens = self.information[self.timestep][self.dens_to_draw]
         if len(self.dens) == 3:
@@ -283,8 +341,10 @@ class Screen(gtk.DrawingArea):
                     densi = densterp(tx,ty,self.dens)
 #                    print densi
                     if densi > 0:
-                        self.ctx.set_source_rgba(0.543,0.271,0.186,densi/self.max_dens)#brown
-                        self.ctx.rectangle(idisp+i*xstep,idisp+j*ystep,xstep,ystep)
+                        # self.ctx.set_source_rgba(0.543,0.271,0.186,densi/self.max_dens)#brown
+#                         self.ctx.rectangle(idisp+i*xstep,idisp+j*ystep,xstep,ystep)
+                        self.ctx.set_source_rgb(0,0,0)
+                        self.ctx.arc(idisp+i*xstep,idisp+j*ystep,2,0,math.pi*2)
                         self.ctx.fill()
 
     def draw_divergence(self):
@@ -402,6 +462,8 @@ def main():
     stage_box = gtk.HBox()
     stage_box.pack_start(stage_dec)
     stage_box.pack_start(stage_inc)
+    veldraw = gtk.Button("Draw Velocity")
+    veldraw_handle = veldraw.connect('button_press_event',widget.draw_velocity)
     newline = gtk.Label(" ")
 
     density_butt = gtk.Button("Draw density")
@@ -439,7 +501,8 @@ def main():
     buttonbox.pack_start(timestepButtonBox, False)
     buttonbox.pack_start(stagelabel,False)
     buttonbox.pack_start(stage,False)
-    buttonbox.pack_start(stage_box, False)
+    buttonbox.pack_start(stage_box, False)    
+    buttonbox.pack_start(veldraw,False)
     buttonbox.pack_start(newline, False)
     buttonbox.pack_start(density_butt,False, padding=3)
     buttonbox.pack_start(density_res_box, False)
@@ -452,6 +515,7 @@ def main():
     bigbox.pack_end(widget, True, True, 0)
     buttonbox.show()
     stage_inc.show()
+    veldraw.show()
     stage_box.show()
     density_res_box.show()
     density_xres.show()
